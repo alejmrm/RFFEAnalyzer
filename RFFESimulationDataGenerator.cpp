@@ -1,5 +1,6 @@
 #include "RFFESimulationDataGenerator.h"
 #include "RFFEAnalyzerSettings.h"
+#include "RFFEUtil.h"
 
 #include <AnalyzerHelpers.h>
 
@@ -63,30 +64,83 @@ void RFFESimulationDataGenerator::CreateRffeTransaction()
     U8 cmd;
     U8 cmd_frames[] = 
     {
-        0x00, 0x07, 0x0F,
-        0x10, 0x1B, 0x1F,
-        0x20, 0x23, 0x2F,
-        0x30, 0x36, 0x37,
-        0x38, 0x3D, 0x3F,
-        0x40, 0x43, 0x55, 0x5F,
-        0x60, 0x64, 0x78, 0x7F,
-        0x80, 0x91, 0xA3, 0xBC, 0xC1, 0xD9, 0xEF, 0xF2, 0xFF
+        //0x01, //0x07, 0x0F,
+        //0x10, //0x1B, 0x1F,
+        //0x21, //0x23, 0x2F,
+        //0x31, //0x36, 0x37,
+        //0x39, //0x3D, 0x3F,
+        0x43, //0x43, 0x55, 0x5F,
+        0x64, //0x64, 0x78, 0x7F,
+        0x84, //0x91, 0xA3, 0xBC, 0xC1, 0xD9, 0xEF, 0xF2, 0xFF
     };
     U8 sa_addrs[] =
     {
-        0x5, 0x7, 0x8, 0x2
+        0x5, //0x7, 0x8, 0x2
     };
     
-    for( U32 adr=0 ; adr < 2/*sizeof(sa_addrs)/sizeof(sa_addrs[0])*/ ; adr++ )
+    for( U32 adr=0 ; adr < sizeof(sa_addrs)/sizeof(sa_addrs[0]) ; adr++ )
     {
         for ( U32 cmd_idx=0 ; cmd_idx < sizeof(cmd_frames)/sizeof(cmd_frames[0]) ; cmd_idx++ )
         {
             CreateStart();
             CreateSlaveAddress( sa_addrs[adr] );
             cmd = cmd_frames[cmd_idx];
-            CreateByte( cmd );
-            CreateParity();
-            CreateDataFrame( cmd );
+            CreateCommandFrame( cmd );
+
+            switch ( RFFEUtil::decodeRFFECmdFrame( cmd ) )
+            {
+            case RFFEAnalyzerResults::RffeTypeExtWrite:
+                CreateAddressFrame( 0x65 );
+                for( U32 i = RFFEUtil::byteCount( cmd ) ; i != 0; i-- )
+                {
+                    CreateDataFrame( 0x11 );
+                }
+                CreateBusPark();
+                break;
+            case RFFEAnalyzerResults::RffeTypeReserved:
+                CreateBusPark();
+                break;
+            case RFFEAnalyzerResults::RffeTypeExtRead:
+                CreateAddressFrame( 0x4C );
+                CreateBusPark();
+                for( U32 i = RFFEUtil::byteCount( cmd ) ; i != 0; i-- )
+                {
+                    CreateDataFrame( 0x11 );
+                }
+                CreateBusPark();
+                break;
+            case RFFEAnalyzerResults::RffeTypeExtLongWrite:
+                CreateAddressFrame( 0x5A );
+                CreateAddressFrame( 0x94 );
+                for( U32 i = RFFEUtil::byteCount( cmd ) ; i != 0; i-- )
+                {
+                    CreateDataFrame( 0x11 );
+                }
+                CreateBusPark();
+                break;
+            case RFFEAnalyzerResults::RffeTypeExtLongRead:
+                CreateAddressFrame( 0x12 );
+                CreateAddressFrame( 0x34 );
+                CreateBusPark();
+                for( U32 i = RFFEUtil::byteCount( cmd ) ; i != 0; i-- )
+                {
+                    CreateDataFrame( 0x11 );
+                }
+                CreateBusPark();
+                break;
+            case RFFEAnalyzerResults::RffeTypeNormalWrite:
+                CreateDataFrame( 0x12 );
+                CreateBusPark();
+                break;
+            case RFFEAnalyzerResults::RffeTypeNormalRead:
+                CreateBusPark();
+                CreateDataFrame( 0x12 );
+                CreateBusPark();
+                break;
+            case RFFEAnalyzerResults::RffeTypeShortWrite:
+                CreateBusPark();
+                break;
+            }
         }
     }
 }
@@ -139,6 +193,7 @@ void RFFESimulationDataGenerator::CreateSlaveAddress(U8 addr )
 
 void RFFESimulationDataGenerator::CreateByte(U8 cmd)
 {
+    BitState     bit;
     BitExtractor cmd_bits( cmd, AnalyzerEnums::MsbFirst, 8 );
 
 	for( U32 i=0; i< 8; i++ )
@@ -146,9 +201,10 @@ void RFFESimulationDataGenerator::CreateByte(U8 cmd)
 		mSclk->Transition();
 		mRffeSimulationChannels.AdvanceAll( mClockGenerator.AdvanceByHalfPeriod( .5 ) );
 
-		mSdata->TransitionIfNeeded( cmd_bits.GetNextBit() );
+        bit = cmd_bits.GetNextBit();
+		mSdata->TransitionIfNeeded( bit );
 
-        if( mSdata->GetCurrentBitState() == BIT_HIGH ) 
+        if( bit == BIT_HIGH ) 
             mParityCounter++;
 
 		mRffeSimulationChannels.AdvanceAll( mClockGenerator.AdvanceByHalfPeriod( .5 ) );
@@ -166,6 +222,10 @@ void RFFESimulationDataGenerator::CreateParity()
     if( AnalyzerHelpers::IsEven(mParityCounter) )
     {
 		mSdata->TransitionIfNeeded( BIT_HIGH );
+    }
+    else
+    {
+		mSdata->TransitionIfNeeded( BIT_LOW );
     }
 
 	mRffeSimulationChannels.AdvanceAll( mClockGenerator.AdvanceByHalfPeriod( .5 ) );
@@ -185,80 +245,26 @@ void RFFESimulationDataGenerator::CreateBusPark()
 	mSclk->Transition();
 
     mRffeSimulationChannels.AdvanceAll( mClockGenerator.AdvanceByHalfPeriod( 1.0 ) );
-
-    mParityCounter = 0;
 }
 
-void RFFESimulationDataGenerator::CreateDataFrame(U32 decode)
+void RFFESimulationDataGenerator::CreateCommandFrame( U8 cmd )
 {
-    if ( decode  < 0x10 )
-    {
-        CreateByte( 0xBC );
-        CreateParity();
-        for( U32 i=0; i <= (decode & 0x0F); i++ )
-        {
-            CreateByte( 0x40 + i );
-            CreateParity();
-        }
-        CreateBusPark();
-    }
-    else if ( (decode >= 0x10) && (decode < 0x20) )
-    {
-    }
-    else if ( (decode >= 0x20) && (decode < 0x30) )
-    {
-        CreateByte( 0x9A );
-        CreateParity();
-        CreateBusPark();
-        for( U32 i=0; i <= (decode & 0x0F); i++ )
-        {
-            CreateByte( 0x30 + i );
-            CreateParity();
-        }
-        CreateBusPark();
-    }
-    else if ( (decode >= 0x30) && (decode < 0x38) )
-    {
-        CreateByte( 0x56 );
-        CreateParity();
-        CreateByte( 0x78 );
-        CreateParity();
-        for( U32 i=0; i <= (decode & 0x07); i++ )
-        {
-            CreateByte( 0x10 + i );
-            CreateParity();
-        }
-        CreateBusPark();
-    }
-    else if ( (decode >= 0x38) && (decode < 0x40) )
-    {
-        CreateByte( 0x12 );
-        CreateParity();
-        CreateByte( 0x34 );
-        CreateParity();
-        CreateBusPark();
-        for( U32 i=0; i <= (decode & 0x07); i++ )
-        {
-            CreateByte( 0x10 + i );
-            CreateParity();
-        }
-        CreateBusPark();
-    }
-    else if ( (decode >= 0x40) && (decode < 0x60) )
-    {
-        CreateByte( 0x81 );
-        CreateParity();
-        CreateBusPark();
-    }
-    else if ( (decode >= 0x60) && (decode < 0x80) )
-    {
-        CreateBusPark();
-        CreateByte( 0x2C );
-        CreateParity();
-        CreateBusPark();
-    }
-    else
-    {
-        CreateBusPark();
-    }
+    mParityCounter = 0;
+    CreateByte( cmd );
+    CreateParity();
 }
+
+void RFFESimulationDataGenerator::CreateAddressFrame( U8 addr )
+{
+    mParityCounter = 0;
+    CreateByte( addr );
+    CreateParity();
+}
+
+void RFFESimulationDataGenerator::CreateDataFrame( U8 data )
+{
+    mParityCounter = 0;
+    CreateByte( data );
+    CreateParity();
+}
+

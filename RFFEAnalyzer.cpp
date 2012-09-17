@@ -1,5 +1,6 @@
 #include "RFFEAnalyzer.h"
 #include "RFFEAnalyzerSettings.h"
+#include "RFFEUtil.h"
 #include <AnalyzerChannelData.h>
 
 RFFEAnalyzer::RFFEAnalyzer()
@@ -24,6 +25,7 @@ void RFFEAnalyzer::SetupResults()
 
 void RFFEAnalyzer::WorkerThread()
 {
+    U32 count;
 	mSampleRateHz = GetSampleRate();
 
 	mSdata = GetAnalyzerChannelData( mSettings->mSdataChannel );
@@ -35,10 +37,62 @@ void RFFEAnalyzer::WorkerThread()
 	for( ; ; )
 	{
         FindStartSeqCondition();
-        FindCommand();
+        count = FindSlaveAddrAndCommand();
         FindParity();
-        FindDataFrames();
-        //FindBusPark();
+
+        switch ( mRffeType )
+        {
+        case RFFEAnalyzerResults::RffeTypeExtWrite:
+            FindAddressFrame();
+            for( U32 i = count ; i != 0; i-- )
+            {
+                FindDataFrame();
+            }
+            FindBusPark();
+            break;
+        case RFFEAnalyzerResults::RffeTypeReserved:
+            break;
+        case RFFEAnalyzerResults::RffeTypeExtRead:
+            FindAddressFrame();
+            FindBusPark();
+            for( U32 i = count ; i != 0; i-- )
+            {
+                FindDataFrame();
+            }
+            FindBusPark();
+            break;
+        case RFFEAnalyzerResults::RffeTypeExtLongWrite:
+            FindAddressFrame();
+            FindAddressFrame();
+            for( U32 i = count ; i != 0; i-- )
+            {
+                FindDataFrame();
+            }
+            FindBusPark();
+            break;
+        case RFFEAnalyzerResults::RffeTypeExtLongRead:
+            FindAddressFrame();
+            FindAddressFrame();
+            FindBusPark();
+            for( U32 i = count ; i != 0; i-- )
+            {
+                FindDataFrame();
+            }
+            FindBusPark();
+            break;
+        case RFFEAnalyzerResults::RffeTypeNormalWrite:
+            FindDataFrame();
+            FindBusPark();
+            break;
+        case RFFEAnalyzerResults::RffeTypeNormalRead:
+            FindBusPark();
+            FindDataFrame();
+            FindBusPark();
+            break;
+        case RFFEAnalyzerResults::RffeTypeShortWrite:
+            FindBusPark();
+            break;
+        }
         CheckIfThreadShouldExit();
 	}
 }
@@ -130,8 +184,9 @@ void RFFEAnalyzer::DrawMarkersDotsAndStates( U32 start,
     }
 }
 
-void RFFEAnalyzer::FindCommand()
+U32 RFFEAnalyzer::FindSlaveAddrAndCommand()
 {
+    U32 count = 0;
     U64 cmd;
     U32 i;
 	DataBuilder cmd_builder;
@@ -174,11 +229,12 @@ void RFFEAnalyzer::FindCommand()
 	ReportProgress( frame.mEndingSampleInclusive );
 
 	// decode type
-    cmd = cmd & 0xFF;
-    if ( cmd  < 0x10 )
+    mRffeType = RFFEUtil::decodeRFFECmdFrame( (U8)cmd );
+    switch ( mRffeType )
     {
+    case RFFEAnalyzerResults::RffeTypeExtWrite:
         frame.mType                    = RFFEAnalyzerResults::RffeTypeField;
-        frame.mData1                   = mRffeType = RFFEAnalyzerResults::RffeTypeExtWrite;
+        frame.mData1                   = mRffeType;
 	    frame.mStartingSampleInclusive = sampleClkOffsets[4] + 1;
 	    frame.mEndingSampleInclusive   = sampleClkOffsets[8];
 
@@ -192,21 +248,21 @@ void RFFEAnalyzer::FindCommand()
 
         DrawMarkersDotsAndStates( 9, 13, AnalyzerResults::Dot, sampleDataState );
     	mResults->AddFrame( frame );
-    }
-    else if ( (cmd >= 0x10) && (cmd < 0x20) )
-    {
+
+        count = RFFEUtil::byteCount( (U8)cmd );
+        break;
+    case RFFEAnalyzerResults::RffeTypeReserved: 
         frame.mType                    = RFFEAnalyzerResults::RffeTypeField;
-        frame.mData1                   = mRffeType = RFFEAnalyzerResults::RffeTypeReserved;
+        frame.mData1                   = mRffeType;
 	    frame.mStartingSampleInclusive = sampleClkOffsets[4] + 1;
 	    frame.mEndingSampleInclusive   = sampleClkOffsets[12];
 
         DrawMarkersDotsAndStates( 5, 13, AnalyzerResults::ErrorSquare, sampleDataState );
     	mResults->AddFrame( frame );
-    }
-    else if ( (cmd >= 0x20) && (cmd < 0x30) )
-    {
+        break;
+    case RFFEAnalyzerResults::RffeTypeExtRead:
         frame.mType                    = RFFEAnalyzerResults::RffeTypeField;
-        frame.mData1                   = mRffeType = RFFEAnalyzerResults::RffeTypeExtRead;
+        frame.mData1                   = mRffeType;
 	    frame.mStartingSampleInclusive = sampleClkOffsets[4] + 1;
 	    frame.mEndingSampleInclusive   = sampleClkOffsets[8];
 
@@ -220,11 +276,12 @@ void RFFEAnalyzer::FindCommand()
 
         DrawMarkersDotsAndStates( 9, 13, AnalyzerResults::Dot, sampleDataState );
     	mResults->AddFrame( frame );
-    }
-    else if ( (cmd >= 0x30) && (cmd < 0x38) )
-    {
+
+        count = RFFEUtil::byteCount( (U8)cmd );
+        break;
+    case RFFEAnalyzerResults::RffeTypeExtLongWrite:
         frame.mType                    = RFFEAnalyzerResults::RffeTypeField;
-        frame.mData1                   = mRffeType = RFFEAnalyzerResults::RffeTypeExtLongWrite;
+        frame.mData1                   = mRffeType;
 	    frame.mStartingSampleInclusive = sampleClkOffsets[4] + 1;
 	    frame.mEndingSampleInclusive   = sampleClkOffsets[9];
 
@@ -238,11 +295,12 @@ void RFFEAnalyzer::FindCommand()
 
         DrawMarkersDotsAndStates( 10, 13, AnalyzerResults::Dot, sampleDataState );
     	mResults->AddFrame( frame );
-    }
-    else if ( (cmd >= 0x38) && (cmd < 0x40) )
-    {
+
+        count = RFFEUtil::byteCount( (U8)cmd );
+        break;
+    case RFFEAnalyzerResults::RffeTypeExtLongRead:
         frame.mType                    = RFFEAnalyzerResults::RffeTypeField;
-        frame.mData1                   = mRffeType = RFFEAnalyzerResults::RffeTypeExtLongRead;
+        frame.mData1                   = mRffeType;
 	    frame.mStartingSampleInclusive = sampleClkOffsets[4] + 1;
 	    frame.mEndingSampleInclusive   = sampleClkOffsets[9];
 
@@ -256,11 +314,12 @@ void RFFEAnalyzer::FindCommand()
 
         DrawMarkersDotsAndStates( 10, 13, AnalyzerResults::Dot, sampleDataState );
     	mResults->AddFrame( frame );
-    }
-    else if ( (cmd >= 0x40) && (cmd < 0x60) )
-    {
+
+        count = RFFEUtil::byteCount( (U8)cmd );
+        break;
+    case RFFEAnalyzerResults::RffeTypeNormalWrite:
         frame.mType                    = RFFEAnalyzerResults::RffeTypeField;
-        frame.mData1                   = mRffeType = RFFEAnalyzerResults::RffeTypeNormalWrite;
+        frame.mData1                   = mRffeType;
 	    frame.mStartingSampleInclusive = sampleClkOffsets[4] + 1;
 	    frame.mEndingSampleInclusive   = sampleClkOffsets[7];
 
@@ -274,11 +333,10 @@ void RFFEAnalyzer::FindCommand()
 
         DrawMarkersDotsAndStates( 8, 13, AnalyzerResults::Dot, sampleDataState );
     	mResults->AddFrame( frame );
-    }
-    else if ( (cmd >= 0x60) && (cmd < 0x80) )
-    {
+        break;
+    case RFFEAnalyzerResults::RffeTypeNormalRead:
         frame.mType                    = RFFEAnalyzerResults::RffeTypeField;
-        frame.mData1                   = mRffeType = RFFEAnalyzerResults::RffeTypeNormalRead;
+        frame.mData1                   = mRffeType;
 	    frame.mStartingSampleInclusive = sampleClkOffsets[4] + 1;
 	    frame.mEndingSampleInclusive   = sampleClkOffsets[7];
 
@@ -292,11 +350,10 @@ void RFFEAnalyzer::FindCommand()
 
         DrawMarkersDotsAndStates( 8, 13, AnalyzerResults::Dot, sampleDataState );
     	mResults->AddFrame( frame );
-    }
-    else
-    {
+        break;
+    case RFFEAnalyzerResults::RffeTypeShortWrite:
         frame.mType                    = RFFEAnalyzerResults::RffeTypeField;
-        frame.mData1                   = mRffeType = RFFEAnalyzerResults::RffeTypeShortWrite;
+        frame.mData1                   = mRffeType;
 	    frame.mStartingSampleInclusive = sampleClkOffsets[4] + 1;
 	    frame.mEndingSampleInclusive   = sampleClkOffsets[5];
 
@@ -310,10 +367,13 @@ void RFFEAnalyzer::FindCommand()
 
         DrawMarkersDotsAndStates( 6, 13, AnalyzerResults::Dot, sampleDataState );
     	mResults->AddFrame( frame );
+        break;
     }
 
 	mResults->CommitResults();
 	ReportProgress( frame.mEndingSampleInclusive );
+
+    return count;
 }
 
 void RFFEAnalyzer::FindParity()
@@ -389,6 +449,81 @@ void RFFEAnalyzer::FindBusPark()
     mResults->AddFrame( frame );
 	mResults->CommitResults();
 	ReportProgress( frame.mEndingSampleInclusive );
+}
+
+void RFFEAnalyzer::FindDataFrame()
+{
+	Frame frame;
+    AnalyzerResults::MarkerType sampleDataState[16];
+
+    U64 addr = GetByte(sampleDataState);
+
+    // decode slave address
+    frame.mType                    = RFFEAnalyzerResults::RffeDataField;
+    frame.mData1                   = addr;
+	frame.mStartingSampleInclusive = sampleClkOffsets[0];
+	frame.mEndingSampleInclusive   = sampleClkOffsets[8];
+
+    DrawMarkersDotsAndStates( 0, 8, AnalyzerResults::Dot, sampleDataState );
+    mResults->AddFrame( frame );
+	mResults->CommitResults();
+	ReportProgress( frame.mEndingSampleInclusive );
+
+    FindParity();
+}
+
+void RFFEAnalyzer::FindAddressFrame()
+{
+	Frame frame;
+    AnalyzerResults::MarkerType sampleDataState[16];
+
+    U64 addr = GetByte(sampleDataState);
+
+    // decode slave address
+    frame.mType                    = RFFEAnalyzerResults::RffeAddressField;
+    frame.mData1                   = addr;
+	frame.mStartingSampleInclusive = sampleClkOffsets[0];
+	frame.mEndingSampleInclusive   = sampleClkOffsets[8];
+
+    DrawMarkersDotsAndStates( 0, 8, AnalyzerResults::Square, sampleDataState );
+    mResults->AddFrame( frame );
+	mResults->CommitResults();
+	ReportProgress( frame.mEndingSampleInclusive );
+
+    FindParity();
+}
+
+U64 RFFEAnalyzer::GetByte(AnalyzerResults::MarkerType *states)
+{
+    U64 data;
+    U32 i;
+	DataBuilder data_builder;
+
+    data_builder.Reset( &data, AnalyzerEnums::MsbFirst , 8 );
+
+    // starting at rising edge of clk
+    for( i=0; i < 8; i++ )
+    {
+        sampleClkOffsets[i] =  mSclk->GetSampleNumber();
+        // falling edge of sclk
+        mSclk->AdvanceToNextEdge();
+        sampleDataOffsets[i] =  mSclk->GetSampleNumber();
+
+        mSdata->AdvanceToAbsPosition( mSclk->GetSampleNumber() );
+        // sample data
+        data_builder.AddBit( mSdata->GetBitState() );
+
+        if ( mSdata->GetBitState() == BIT_HIGH )
+            states[i] = AnalyzerResults::One;
+        else
+            states[i] = AnalyzerResults::Zero;
+
+        mSclk->AdvanceToNextEdge();
+    }
+    sampleClkOffsets[i] =  mSclk->GetSampleNumber();
+    mSdata->AdvanceToAbsPosition( mSclk->GetSampleNumber() );
+
+    return data;
 }
 
 bool RFFEAnalyzer::NeedsRerun()

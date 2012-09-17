@@ -48,10 +48,12 @@ protected: //vars
 protected: // functions
 	void AdvanceToBeginningStartBit();
     void FindStartSeqCondition();
-    void FindCommand();
+    U32 FindSlaveAddrAndCommand();
     void FindParity();
-    void FindDataFrames();
+    void FindDataFrame();
+    void FindAddressFrame();
     void FindBusPark();
+    U64  GetByte(AnalyzerResults::MarkerType *states);
     void DrawMarkersDotsAndStates( U32 start,
                                    U32 end,
                                    AnalyzerResults::MarkerType type,
