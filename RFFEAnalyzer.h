@@ -19,7 +19,9 @@ public:
 	virtual void SetupResults();
 	virtual void WorkerThread();
 
-	virtual U32 GenerateSimulationData( U64 newest_sample_requested, U32 sample_rate, SimulationChannelDescriptor** simulation_channels );
+	virtual U32 GenerateSimulationData( U64 newest_sample_requested,
+                                        U32 sample_rate,
+                                        SimulationChannelDescriptor** simulation_channels );
 	virtual U32 GetMinimumSampleRateHz();
 
 	virtual const char* GetAnalyzerName() const;
@@ -58,10 +60,16 @@ protected: // functions
                                    U32 end,
                                    AnalyzerResults::MarkerType type,
                                    AnalyzerResults::MarkerType *states);
-
+    BitState GetNextBit(U32 const idx, U64 *const clk, U64 *const data );
 private:
-    U64 sampleClkOffsets[24];
-    U64 sampleDataOffsets[24];
+    U64 pulse_width2;
+    U64 sampleClkOffsets[16];
+    U64 sampleDataOffsets[16];
+
+    U64 gSampleCount;
+    U64 gSampleNormalized;
+    U64 gSampleClk[256];
+    U64 gsampleData[256];
 
 #pragma warning( pop )
 };

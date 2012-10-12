@@ -67,22 +67,14 @@ void RFFEAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel,
 
     case RffeSAField:
         {
-            char number_str[128];
+            char number_str[8];
 		    std::stringstream ss;
 
-		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 4, number_str, 128 );
+		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 4, number_str, 8 );
 
             AddResultString( "SA" );
 
 		    ss << "SA:" << number_str;
-		    AddResultString( ss.str().c_str() );
-            ss.str("");
-
-		    ss << "SlaveAdr:" << number_str;
-		    AddResultString( ss.str().c_str() );
-            ss.str("");
-
-            ss << "Slave Address:" << number_str;
 		    AddResultString( ss.str().c_str() );
         }
         break;
@@ -91,140 +83,113 @@ void RFFEAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel,
         {
             AddResultString( RffeTypeStringShort[frame.mData1] );
             AddResultString( RffeTypeStringMid[frame.mData1] );
-            AddResultString( RffeTypeStringLong[frame.mData1] );
+            //AddResultString( RffeTypeStringLong[frame.mData1] );
         }
         break;
 
     case RffeExByteCountField:
         {
-            char number_str[128];
+            char number_str[8];
 		    std::stringstream ss;
 
-		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 4, number_str, 128 );
+		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 4, number_str, 8 );
 
             AddResultString( "BC" );
 
 		    ss << "BC:" << number_str;
 		    AddResultString( ss.str().c_str() );
-            ss.str("");
-
-		    ss << "Byte Count:" << number_str;
-            AddResultString( ss.str().c_str() );
         }
         break;
 
     case RffeExLongByteCountField:
         {
-            char number_str[128];
+            char number_str[8];
 		    std::stringstream ss;
 
-		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 3, number_str, 128 );
+		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 3, number_str, 8 );
 
             AddResultString( "BC" );
 
 		    ss << "BC:" << number_str;
 		    AddResultString( ss.str().c_str() );
             ss.str("");
-
-		    ss << "Byte Count:" << number_str;
-            AddResultString( ss.str().c_str() );
         }
         break;
 
     case RffeShortAddressField:
         {
-            char number_str[128];
+            char number_str[8];
 		    std::stringstream ss;
 
-		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 5, number_str, 128 );
+		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 5, number_str, 8 );
 
             AddResultString( "A" );
 
-		    ss << "Adr:" << number_str;
+		    ss << "A:" << number_str;
 		    AddResultString( ss.str().c_str() );
-            ss.str("");
-
-		    ss << "Address:" << number_str;
-            AddResultString( ss.str().c_str() );
         }
         break;
 
     case RffeAddressField:
         {
-            char number_str[128];
+            char number_str[8];
 		    std::stringstream ss;
 
-		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 8, number_str, 128 );
+		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 8, number_str, 8 );
 
             AddResultString( "A" );
 
-		    ss << "Adr:" << number_str;
+		    ss << "A:" << number_str;
 		    AddResultString( ss.str().c_str() );
-            ss.str("");
-
-		    ss << "Address:" << number_str;
-            AddResultString( ss.str().c_str() );
         }
         break;
 
     case RffeShortDataField:
         {
-            char number_str[128];
+            char number_str[8];
 		    std::stringstream ss;
 
-		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 7, number_str, 128 );
+		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 7, number_str, 8 );
 
             AddResultString( "D" );
 
 		    ss << "D:" << number_str;
 		    AddResultString( ss.str().c_str() );
-            ss.str("");
-
-		    ss << "Data:" << number_str;
-            AddResultString( ss.str().c_str() );
         }
         break;
 
     case RffeDataField:
         {
-            char number_str[128];
+            char number_str[8];
 		    std::stringstream ss;
 
-		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 8, number_str, 128 );
+		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 8, number_str, 8 );
 
             AddResultString( "D" );
 
 		    ss << "D:" << number_str;
 		    AddResultString( ss.str().c_str() );
-            ss.str("");
-
-		    ss << "Data:" << number_str;
-            AddResultString( ss.str().c_str() );
         }
         break;
 
     case RffeParityField:
         {
-            char number_str[128];
+            char number_str[4];
 		    std::stringstream ss;
 
-		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 1, number_str, 128 );
+		    AnalyzerHelpers::GetNumberString( frame.mData1, Decimal, 1, number_str, 4 );
 
             AddResultString( "P" );
 
-		    ss << "P:" << number_str;
+		    ss << "P" << number_str;
 		    AddResultString( ss.str().c_str() );
-            ss.str("");
-
-		    ss << "Parity:" << number_str;
-            AddResultString( ss.str().c_str() );
         }
         break;
 
     case RffeBusParkField:
         {
+            AddResultString( "B" );
             AddResultString( "BP" );
-            AddResultString( "BusPark" );
         }
         break;
 
@@ -232,7 +197,6 @@ void RFFEAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel,
     default:
         {
             AddResultString( "E" );
-		    AddResultString( "Error" );
         }
         break;
     }

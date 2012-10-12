@@ -18,7 +18,6 @@ public:
 	
 	Channel mSclkChannel;
 	Channel mSdataChannel;
-	U32 mBitRate;
 
 protected:
 	std::auto_ptr< AnalyzerSettingInterfaceChannel >	mSclkChannelInterface;

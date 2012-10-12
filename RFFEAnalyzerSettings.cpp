@@ -4,8 +4,7 @@
 
 RFFEAnalyzerSettings::RFFEAnalyzerSettings()
 :	mSclkChannel( UNDEFINED_CHANNEL ),
-    mSdataChannel( UNDEFINED_CHANNEL ),
-	mBitRate( 9600 )
+    mSdataChannel( UNDEFINED_CHANNEL )
 {
 	mSclkChannelInterface.reset( new AnalyzerSettingInterfaceChannel() );
 	mSclkChannelInterface->SetTitleAndTooltip( "SCLK", "Specify the SCLK Signal(RFFEv1.0)" );
@@ -15,15 +14,8 @@ RFFEAnalyzerSettings::RFFEAnalyzerSettings()
 	mSdataChannelInterface->SetTitleAndTooltip( "SDATA", "Specify the SDATA Signal(RFFEv1.0)" );
 	mSdataChannelInterface->SetChannel( mSdataChannel );
 
-    mBitRateInterface.reset( new AnalyzerSettingInterfaceInteger() );
-	mBitRateInterface->SetTitleAndTooltip( "Bit Rate (Bits/S)",  "Specify the bit rate in bits per second." );
-	mBitRateInterface->SetMax( 6000000 );
-	mBitRateInterface->SetMin( 1 );
-	mBitRateInterface->SetInteger( mBitRate );
-
 	AddInterface( mSclkChannelInterface.get() );
 	AddInterface( mSdataChannelInterface.get() );
-	AddInterface( mBitRateInterface.get() );
 
 	AddExportOption( 0, "Export as text/csv file" );
 	AddExportExtension( 0, "text", "txt" );
@@ -42,7 +34,6 @@ bool RFFEAnalyzerSettings::SetSettingsFromInterfaces()
 {
 	mSclkChannel = mSclkChannelInterface->GetChannel();
 	mSdataChannel = mSdataChannelInterface->GetChannel();
-	mBitRate = mBitRateInterface->GetInteger();
 
 	ClearChannels();
 	AddChannel( mSclkChannel, "SCLK", true );
@@ -55,7 +46,6 @@ void RFFEAnalyzerSettings::UpdateInterfacesFromSettings()
 {
 	mSclkChannelInterface->SetChannel( mSclkChannel );
 	mSdataChannelInterface->SetChannel( mSdataChannel );
-	mBitRateInterface->SetInteger( mBitRate );
 }
 
 void RFFEAnalyzerSettings::LoadSettings( const char* settings )
@@ -65,7 +55,6 @@ void RFFEAnalyzerSettings::LoadSettings( const char* settings )
 
 	text_archive >> mSclkChannel;
 	text_archive >> mSdataChannel;
-	text_archive >> mBitRate;
 
 	ClearChannels();
 	AddChannel( mSclkChannel, "SCLK", true );
@@ -80,7 +69,6 @@ const char* RFFEAnalyzerSettings::SaveSettings()
 
 	text_archive << mSclkChannel;
 	text_archive << mSdataChannel;
-	text_archive << mBitRate;
 
 	return SetReturnString( text_archive.GetString() );
 }

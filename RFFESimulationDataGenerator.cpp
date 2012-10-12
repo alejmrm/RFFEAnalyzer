@@ -12,7 +12,8 @@ RFFESimulationDataGenerator::~RFFESimulationDataGenerator()
 {
 }
 
-void RFFESimulationDataGenerator::Initialize( U32 simulation_sample_rate, RFFEAnalyzerSettings* settings )
+void RFFESimulationDataGenerator::Initialize( U32 simulation_sample_rate,
+                                              RFFEAnalyzerSettings* settings )
 {
 	mSimulationSampleRateHz = simulation_sample_rate;
 	mSettings = settings;
@@ -51,7 +52,7 @@ U32 RFFESimulationDataGenerator::GenerateSimulationData( U64 largest_sample_requ
 	{
 		CreateRffeTransaction();
         
-		mRffeSimulationChannels.AdvanceAll( mClockGenerator.AdvanceByHalfPeriod( 20.0 ) );
+		mRffeSimulationChannels.AdvanceAll( mClockGenerator.AdvanceByHalfPeriod( 80.0 ) );
     }
 
 	*simulation_channels = mRffeSimulationChannels.GetArray();
@@ -60,7 +61,6 @@ U32 RFFESimulationDataGenerator::GenerateSimulationData( U64 largest_sample_requ
 
 void RFFESimulationDataGenerator::CreateRffeTransaction()
 {
-	U32 samples_per_bit = mSimulationSampleRateHz / mSettings->mBitRate;
     U8 cmd;
     U8 cmd_frames[] = 
     {
