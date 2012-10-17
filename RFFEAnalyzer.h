@@ -49,18 +49,26 @@ protected: //vars
 
 protected: // functions
 	void AdvanceToBeginningStartBit();
-    void FindStartSeqCondition();
-    U32 FindSlaveAddrAndCommand();
+    S32 FindStartSeqCondition();
+    S32 FindSlaveAddrAndCommand();
     void FindParity();
     void FindDataFrame();
     void FindAddressFrame();
     void FindBusPark();
-    U64  GetByte(AnalyzerResults::MarkerType *states);
+    U64  GetBitStream(U32 len, AnalyzerResults::MarkerType *states);
+    bool CheckClockRate();
     void DrawMarkersDotsAndStates( U32 start,
-                                   U32 end,
+                                   U32 len,
                                    AnalyzerResults::MarkerType type,
                                    AnalyzerResults::MarkerType *states);
     BitState GetNextBit(U32 const idx, U64 *const clk, U64 *const data );
+    void FillInFrame( RFFEAnalyzerResults::RffeFrameType type,
+                      U64 frame_data,
+                      U64 starting_sample,
+                      U64 ending_sample,
+                      U32 markers_start,
+                      U32 markers_len,
+                      AnalyzerResults::MarkerType *states);
 private:
     U64 pulse_width2;
     U64 sampleClkOffsets[16];

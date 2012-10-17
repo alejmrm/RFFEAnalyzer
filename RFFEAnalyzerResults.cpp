@@ -29,17 +29,6 @@ static const char *RffeTypeStringMid[] =
     "Wr0",
 };
 
-static const char *RffeTypeStringLong[] =
-{
-    "Extended Write",
-    "Reserved",
-    "Extended Read",
-    "Extended Long Write",
-    "Extended Long Read",
-    "Write",
-    "Read",
-    "Write 0",
-};
 
 RFFEAnalyzerResults::RFFEAnalyzerResults( RFFEAnalyzer* analyzer, RFFEAnalyzerSettings* settings )
 :	AnalyzerResults(),
@@ -54,6 +43,8 @@ RFFEAnalyzerResults::~RFFEAnalyzerResults()
 
 void RFFEAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel, DisplayBase display_base )
 {
+    channel = channel;
+
 	ClearResultStrings();
 	Frame frame = GetFrame( frame_index );
 
@@ -83,7 +74,6 @@ void RFFEAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel,
         {
             AddResultString( RffeTypeStringShort[frame.mData1] );
             AddResultString( RffeTypeStringMid[frame.mData1] );
-            //AddResultString( RffeTypeStringLong[frame.mData1] );
         }
         break;
 
@@ -202,11 +192,15 @@ void RFFEAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel,
     }
 }
 
-void RFFEAnalyzerResults::GenerateExportFile( const char* file, DisplayBase display_base, U32 export_type_user_id )
+void RFFEAnalyzerResults::GenerateExportFile( const char* file,
+                                              DisplayBase display_base,
+                                              U32 export_type_user_id )
 {
     std::stringstream ss;
 	void* f = AnalyzerHelpers::StartFile( file );
     bool sdata_used = true;
+
+    export_type_user_id = export_type_user_id;
 
 	if( mSettings->mSdataChannel == UNDEFINED_CHANNEL )
 		sdata_used = false;
@@ -276,19 +270,28 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file, DisplayBase disp
 
 void RFFEAnalyzerResults::GenerateFrameTabularText( U64 frame_index, DisplayBase display_base )
 {
-	Frame frame = GetFrame( frame_index );
+	//Frame frame = GetFrame( frame_index );
+    frame_index = frame_index;
+    display_base = display_base;
+
 	ClearResultStrings();
 	AddResultString( "not supported yet" );
 }
 
 void RFFEAnalyzerResults::GeneratePacketTabularText( U64 packet_id, DisplayBase display_base )
 {
+    packet_id = packet_id;
+    display_base = display_base;
+
 	ClearResultStrings();
-	AddResultString( "not supported" );
+	AddResultString( "not supported yet" );
 }
 
 void RFFEAnalyzerResults::GenerateTransactionTabularText( U64 transaction_id, DisplayBase display_base )
 {
+    transaction_id = transaction_id;
+    display_base = display_base;
+
 	ClearResultStrings();
-	AddResultString( "not supported" );
+	AddResultString( "not supported yet" );
 }
