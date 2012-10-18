@@ -37,9 +37,17 @@ void RFFEAnalyzer::WorkerThread()
 	for( ; ; )
 	{
         count = FindStartSeqCondition();
-        if ( count == -1 ) break;
+        if ( count == -1 )
+        {
+            mResults->CancelPacketAndStartNewPacket();
+            break;
+        }
         count = FindSlaveAddrAndCommand();
-        if ( count == -1 ) continue;
+        if ( count == -1 )
+        {
+            mResults->CancelPacketAndStartNewPacket();
+            continue;
+        }
         FindParity();
 
         switch ( mRffeType )
@@ -206,11 +214,14 @@ bool RFFEAnalyzer::CheckClockRate()
 {
     U32 average;
     U32 pulse;
+    U32 pulse_lo;
 
     average = (U32)(gSampleClk[11]/12);
     pulse   = (U32)(pulse_width2/2);
+    pulse_lo= pulse - 1;
+    if ( pulse == 1 ) return false;
 
-    if ( (average < pulse) || (average >  pulse) )
+    if ( (average < pulse_lo) || (average >  pulse) )
     {
             return false;
     }
