@@ -127,10 +127,27 @@ void RFFEAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel,
 
 		    AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 8, number_str, 8 );
 
-            AddResultString( "A" );
+            switch( frame.mData2 )
+            {
+            case RffeAddressHiField:
+                AddResultString( "A" );
 
-		    ss << "A:" << number_str;
-		    AddResultString( ss.str().c_str() );
+		        ss << "AH:" << number_str;
+		        AddResultString( ss.str().c_str() );
+                break;
+            case RffeAddressLoField:
+                AddResultString( "A" );
+
+		        ss << "AL:" << number_str;
+		        AddResultString( ss.str().c_str() );
+                break;
+            case RffeAddressNormalField:
+            default:
+                AddResultString( "A" );
+
+		        ss << "A:" << number_str;
+		        AddResultString( ss.str().c_str() );
+            }
         }
         break;
 
@@ -186,7 +203,17 @@ void RFFEAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel,
     case RffeErrorCaseField:
     default:
         {
+            char number1_str[20];
+            char number2_str[20];
+		    std::stringstream ss;
+
+		    AnalyzerHelpers::GetNumberString( frame.mData1, Hexadecimal, 32, number1_str, 10 );
+		    AnalyzerHelpers::GetNumberString( frame.mData2, Hexadecimal, 32, number2_str, 10 );
+
             AddResultString( "E" );
+
+		    ss << "E:" << number1_str << " - " << number2_str;
+		    AddResultString( ss.str().c_str() );
         }
         break;
     }
@@ -196,66 +223,191 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
                                               DisplayBase display_base,
                                               U32 export_type_user_id )
 {
+    U64 first_frame_id;
+    U64 last_frame_id;
+    U64 address;
+	char time_str[16];
+    char packet_str[16];
+    char sa_str[8];
+    char type_str[16];
+    char addr_str[16];
+    char parity_str[8];
+    char parityCmd_str[8];
+    char bc_str[8];
+    char data_str[8];
+    std::stringstream payload;
     std::stringstream ss;
+    Frame frame;
 	void* f = AnalyzerHelpers::StartFile( file );
-    bool sdata_used = true;
 
     export_type_user_id = export_type_user_id;
-
-	if( mSettings->mSdataChannel == UNDEFINED_CHANNEL )
-		sdata_used = false;
 
 	U64 trigger_sample  = mAnalyzer->GetTriggerSample();
 	U32 sample_rate     = mAnalyzer->GetSampleRate();
 
-	ss << "Time [s],Packet ID,SA,Type,CmdParity,BC,Address,Data" << std::endl;
+	ss << "Time [s],Packet ID,SSC,SA,Type,Adr,BC,Payload" << std::endl;
 
-	U64 num_frames = GetNumFrames();
 	U64 num_packets = GetNumPackets();
-	for( U32 i=0; i < num_packets; i++ )
+	for( U32 i = 0; i < num_packets; i++ )
 	{
-        U64 first_frame_id;
-        U64 last_frame_id;
+        // package id
+		AnalyzerHelpers::GetNumberString( i, Decimal, 0, packet_str, 16 );
+
+        payload.str( std::string() );
+        sprintf_s( sa_str, 8, "" );
+        sprintf_s( type_str, 8, "" );
+        sprintf_s( addr_str, 8, "" );
+        sprintf_s( parity_str, 8, "" );
+        sprintf_s( parityCmd_str, 8, "" );
+        sprintf_s( bc_str, 8, "" );
+        sprintf_s( data_str, 8, "" );
+        address = 0xFFFFFFFF;
 
 		GetFramesContainedInPacket( i, &first_frame_id, &last_frame_id );
-		Frame frame = GetFrame( first_frame_id );
-		
-        // time
-		char time_str[128];
-		AnalyzerHelpers::GetTimeString( frame.mStartingSampleInclusive,
-                                        trigger_sample,
-                                        sample_rate,
-                                        time_str,
-                                        128 );
+        for ( U64 j = first_frame_id; j <= last_frame_id; j++ )
+        {
+    		frame = GetFrame( j );
 
-        // package id
-        char packet_str[128];
-		AnalyzerHelpers::GetNumberString( i, Decimal, 0, packet_str, 128 );
+            switch( frame.mType )
+            {
+            case RffeSSCField:
+                // starting time using SSC as marker
+		        AnalyzerHelpers::GetTimeString( frame.mStartingSampleInclusive,
+                                                trigger_sample,
+                                                sample_rate,
+                                                time_str,
+                                                16 );
+                break;
 
-        // start of seq control
-        U64 frame_id = first_frame_id;
-		frame = GetFrame( frame_id );
-        frame_id++;
+            case RffeSAField:
+		        AnalyzerHelpers::GetNumberString( frame.mData1, 
+                                                  display_base,
+                                                  4,
+                                                  sa_str,
+                                                  8 );
+                break;
 
-        // slave address
-		frame = GetFrame( frame_id );
-		char sa_str[128];
-		AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 4, sa_str, 128 );
-        frame_id++;
+            case RffeTypeField:
+                sprintf_s( type_str, sizeof(type_str), "%s", RffeTypeStringMid[frame.mData1] );
+                break;
 
-        // type
-		frame = GetFrame( frame_id );
-		char type_str[128];
-		AnalyzerHelpers::GetNumberString( frame.mData2, display_base, 4, type_str, 128 );
+            case RffeExByteCountField:
+		        AnalyzerHelpers::GetNumberString( frame.mData1,
+                                                  display_base,
+                                                  4,
+                                                  bc_str,
+                                                  8 );
+                break;
 
-        frame_id++;
+            case RffeExLongByteCountField:
+		        AnalyzerHelpers::GetNumberString( frame.mData1,
+                                                  display_base,
+                                                  3,
+                                                  bc_str,
+                                                  8 );
+                break;
 
-        ss << time_str << "," << packet_str << std::endl;
+            case RffeShortAddressField:
+                address = frame.mData1;
+                break;
 
-        // Parity
-        // byte count
-        // address
-        // data
+            case RffeAddressField:
+                switch( frame.mData2 )
+                {
+                case RffeAddressHiField:
+                    address = (frame.mData1<<8);
+                    break;
+                case RffeAddressLoField:
+                    address |= frame.mData1;
+                    break;
+                case RffeAddressNormalField:
+                default:
+                    address = frame.mData1;
+                    break;
+                }
+                break;
+
+            case RffeShortDataField:
+		        AnalyzerHelpers::GetNumberString( frame.mData1,
+                                                  display_base,
+                                                  7,
+                                                  data_str,
+                                                  8 );
+		        payload << "D:" << data_str << " ";
+                break;
+
+            case RffeDataField:
+		        AnalyzerHelpers::GetNumberString( frame.mData1,
+                    display_base,
+                    8,
+                    data_str,
+                    8 );
+		        payload << "D:" << data_str << " ";
+                break;
+
+            case RffeParityField:
+                if ( frame.mData2 == 0 )
+                {
+		            AnalyzerHelpers::GetNumberString( frame.mData1,
+                        Decimal,
+                        1,
+                        parity_str,
+                        4 );
+    		        payload << "P" << parity_str << " ";
+                }
+                else
+                {
+		            AnalyzerHelpers::GetNumberString( frame.mData1,
+                        Decimal,
+                        1,
+                        parityCmd_str,
+                        4 );
+                }
+                break;
+
+            case RffeBusParkField:
+                payload << "BP ";
+                break;
+
+            case RffeErrorCaseField:
+            default:
+                char number1_str[20];
+                char number2_str[20];
+
+		        AnalyzerHelpers::GetNumberString( frame.mData1,
+                    Hexadecimal,
+                    32, 
+                    number1_str,
+                    10 );
+		        AnalyzerHelpers::GetNumberString( frame.mData2,
+                    Hexadecimal,
+                    32,
+                    number2_str,
+                    10 );
+		        payload << "E:" << number1_str << " - " << number2_str << " ";
+                break;
+            }
+        }
+
+        ss << time_str << "," << packet_str << ",SSC," << sa_str << "," << type_str;
+
+        if ( address == 0xFFFFFFFF )
+        {
+            ss << ",,," << payload.str().c_str() << " P" << parityCmd_str;
+        }
+        else
+        {
+    	    AnalyzerHelpers::GetNumberString( address,
+                                              display_base,
+                                              8,
+                                              addr_str,
+                                              8 );
+
+            ss << "," << addr_str <<" P" << parityCmd_str << "," << bc_str << "," << payload.str().c_str();
+        }
+        ss << std::endl;
+        AnalyzerHelpers::AppendToFile( (U8*)ss.str().c_str(), ss.str().length(), f );
+        ss.str( std::string() );
 
 		if( UpdateExportProgressAndCheckForCancel( i, num_packets ) == true )
 		{
@@ -263,9 +415,6 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
 			return;
 		}
     }
-
-	UpdateExportProgressAndCheckForCancel( num_frames, num_frames );
-	AnalyzerHelpers::EndFile( f );
 }
 
 void RFFEAnalyzerResults::GenerateFrameTabularText( U64 frame_index, DisplayBase display_base )

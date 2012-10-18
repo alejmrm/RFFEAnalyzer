@@ -17,9 +17,9 @@ RFFEAnalyzerSettings::RFFEAnalyzerSettings()
 	AddInterface( mSclkChannelInterface.get() );
 	AddInterface( mSdataChannelInterface.get() );
 
-	AddExportOption( 0, "Export as text/csv file" );
-	AddExportExtension( 0, "text", "txt" );
+	AddExportOption( 0, "Export as csv/text file" );
 	AddExportExtension( 0, "csv", "csv" );
+	AddExportExtension( 0, "text", "txt" );
 
 	ClearChannels();
 	AddChannel( mSclkChannel, "SCLK", false );

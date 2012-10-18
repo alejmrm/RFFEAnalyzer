@@ -46,6 +46,12 @@ public:
         RffeTypeNormalRead,
         RffeTypeShortWrite,
     };
+    enum RffeAddressFieldSubType
+    {
+        RffeAddressNormalField,
+        RffeAddressHiField,
+        RffeAddressLoField,
+    };
 
 protected: //functions
 

@@ -51,9 +51,9 @@ protected: // functions
 	void AdvanceToBeginningStartBit();
     S32 FindStartSeqCondition();
     S32 FindSlaveAddrAndCommand();
-    void FindParity();
+    void FindParity(bool fromCommandFrame);
     void FindDataFrame();
-    void FindAddressFrame();
+    void FindAddressFrame(RFFEAnalyzerResults::RffeAddressFieldSubType type);
     void FindBusPark();
     U64  GetBitStream(U32 len, AnalyzerResults::MarkerType *states);
     bool CheckClockRate();
@@ -63,7 +63,8 @@ protected: // functions
                                    AnalyzerResults::MarkerType *states);
     BitState GetNextBit(U32 const idx, U64 *const clk, U64 *const data );
     void FillInFrame( RFFEAnalyzerResults::RffeFrameType type,
-                      U64 frame_data,
+                      U64 frame_data1,
+                      U64 frame_data2,
                       U64 starting_sample,
                       U64 ending_sample,
                       U32 markers_start,
