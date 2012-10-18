@@ -378,7 +378,7 @@ S32 RFFEAnalyzer::FindSlaveAddrAndCommand()
         break;
     }
 
-    return count;
+    return count+1;
 }
 
 void RFFEAnalyzer::FindParity(bool fromCommandFrame)
