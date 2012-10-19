@@ -19,11 +19,13 @@ public:
 	Channel mSclkChannel;
 	Channel mSdataChannel;
 	bool    mShowParityInReport;
+	bool    mShowBusParkInReport;
 
 protected:
 	std::auto_ptr< AnalyzerSettingInterfaceChannel > mSclkChannelInterface;
 	std::auto_ptr< AnalyzerSettingInterfaceChannel > mSdataChannelInterface;
 	std::auto_ptr< AnalyzerSettingInterfaceBool >	 mShowParityInReportInterface;
+	std::auto_ptr< AnalyzerSettingInterfaceBool >	 mShowBusParkInReportInterface;
 };
 
 #endif //RFFE_ANALYZER_SETTINGS

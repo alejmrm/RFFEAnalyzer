@@ -21,6 +21,11 @@ RFFEAnalyzerSettings::RFFEAnalyzerSettings()
 		"Check if you want parity information in the exported file" );
 	AddInterface( mShowParityInReportInterface.get() );
 
+	mShowBusParkInReportInterface.reset( new AnalyzerSettingInterfaceBool() );
+	mShowBusParkInReportInterface->SetTitleAndTooltip("Show BusPark in Report?",
+		"Check if you want bus park information in the exported file" );
+	AddInterface( mShowBusParkInReportInterface.get() );
+
 	AddExportOption( 0, "Export as csv/text file" );
 	AddExportExtension( 0, "csv", "csv" );
 	AddExportExtension( 0, "text", "txt" );
@@ -39,6 +44,7 @@ bool RFFEAnalyzerSettings::SetSettingsFromInterfaces()
 	mSclkChannel = mSclkChannelInterface->GetChannel();
 	mSdataChannel = mSdataChannelInterface->GetChannel();
 	mShowParityInReport = mShowParityInReportInterface->GetValue();
+	mShowBusParkInReport = mShowBusParkInReportInterface->GetValue();
 
 	ClearChannels();
 	AddChannel( mSclkChannel, "SCLK", true );
@@ -52,6 +58,7 @@ void RFFEAnalyzerSettings::UpdateInterfacesFromSettings()
 	mSclkChannelInterface->SetChannel( mSclkChannel );
 	mSdataChannelInterface->SetChannel( mSdataChannel );
 	mShowParityInReportInterface->SetValue(mShowParityInReport);
+	mShowBusParkInReportInterface->SetValue(mShowBusParkInReport);
 }
 
 void RFFEAnalyzerSettings::LoadSettings( const char* settings )
@@ -62,6 +69,7 @@ void RFFEAnalyzerSettings::LoadSettings( const char* settings )
 	text_archive >> mSclkChannel;
 	text_archive >> mSdataChannel;
 	text_archive >> mShowParityInReport;
+	text_archive >> mShowBusParkInReport;
 
 	ClearChannels();
 	AddChannel( mSclkChannel, "SCLK", true );
@@ -77,6 +85,7 @@ const char* RFFEAnalyzerSettings::SaveSettings()
 	text_archive << mSclkChannel;
 	text_archive << mSdataChannel;
 	text_archive << mShowParityInReport;
+	text_archive << mShowBusParkInReport;
 
 	return SetReturnString( text_archive.GetString() );
 }

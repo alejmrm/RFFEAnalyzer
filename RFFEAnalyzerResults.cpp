@@ -236,6 +236,7 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
     char bc_str[8];
     char data_str[8];
     bool show_parity = mSettings->mShowParityInReport;
+    bool show_buspark = mSettings->mShowBusParkInReport;
     std::stringstream payload;
     std::stringstream ss;
     Frame frame;
@@ -368,6 +369,8 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
                 break;
 
             case RffeBusParkField:
+                if( ! show_buspark ) break;
+
                 payload << "BP ";
                 break;
 
