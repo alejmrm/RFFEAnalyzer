@@ -235,6 +235,7 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
     char parityCmd_str[8];
     char bc_str[8];
     char data_str[8];
+    bool show_parity = mSettings->mShowParityInReport;
     std::stringstream payload;
     std::stringstream ss;
     Frame frame;
@@ -342,10 +343,11 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
                     8,
                     data_str,
                     8 );
-		        payload << "D:" << data_str << " ";
+		        payload << data_str << " ";
                 break;
 
             case RffeParityField:
+                if ( ! show_parity ) break;
                 if ( frame.mData2 == 0 )
                 {
 		            AnalyzerHelpers::GetNumberString( frame.mData1,

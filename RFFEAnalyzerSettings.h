@@ -18,11 +18,12 @@ public:
 	
 	Channel mSclkChannel;
 	Channel mSdataChannel;
+	bool    mShowParityInReport;
 
 protected:
-	std::auto_ptr< AnalyzerSettingInterfaceChannel >	mSclkChannelInterface;
-	std::auto_ptr< AnalyzerSettingInterfaceChannel >	mSdataChannelInterface;
-	std::auto_ptr< AnalyzerSettingInterfaceInteger >	mBitRateInterface;
+	std::auto_ptr< AnalyzerSettingInterfaceChannel > mSclkChannelInterface;
+	std::auto_ptr< AnalyzerSettingInterfaceChannel > mSdataChannelInterface;
+	std::auto_ptr< AnalyzerSettingInterfaceBool >	 mShowParityInReportInterface;
 };
 
 #endif //RFFE_ANALYZER_SETTINGS

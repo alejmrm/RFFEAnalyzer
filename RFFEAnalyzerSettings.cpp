@@ -9,13 +9,17 @@ RFFEAnalyzerSettings::RFFEAnalyzerSettings()
 	mSclkChannelInterface.reset( new AnalyzerSettingInterfaceChannel() );
 	mSclkChannelInterface->SetTitleAndTooltip( "SCLK", "Specify the SCLK Signal(RFFEv1.0)" );
 	mSclkChannelInterface->SetChannel( mSclkChannel );
+	AddInterface( mSclkChannelInterface.get() );
 
 	mSdataChannelInterface.reset( new AnalyzerSettingInterfaceChannel() );
 	mSdataChannelInterface->SetTitleAndTooltip( "SDATA", "Specify the SDATA Signal(RFFEv1.0)" );
 	mSdataChannelInterface->SetChannel( mSdataChannel );
-
-	AddInterface( mSclkChannelInterface.get() );
 	AddInterface( mSdataChannelInterface.get() );
+
+	mShowParityInReportInterface.reset( new AnalyzerSettingInterfaceBool() );
+	mShowParityInReportInterface->SetTitleAndTooltip("Show Parity in Report?",
+		"Check if you want party information in the exported file" );
+	AddInterface( mShowParityInReportInterface.get() );
 
 	AddExportOption( 0, "Export as csv/text file" );
 	AddExportExtension( 0, "csv", "csv" );
@@ -34,6 +38,7 @@ bool RFFEAnalyzerSettings::SetSettingsFromInterfaces()
 {
 	mSclkChannel = mSclkChannelInterface->GetChannel();
 	mSdataChannel = mSdataChannelInterface->GetChannel();
+	mShowParityInReport = mShowParityInReportInterface->GetValue();
 
 	ClearChannels();
 	AddChannel( mSclkChannel, "SCLK", true );
@@ -46,6 +51,7 @@ void RFFEAnalyzerSettings::UpdateInterfacesFromSettings()
 {
 	mSclkChannelInterface->SetChannel( mSclkChannel );
 	mSdataChannelInterface->SetChannel( mSdataChannel );
+	mShowParityInReportInterface->SetValue(mShowParityInReport);
 }
 
 void RFFEAnalyzerSettings::LoadSettings( const char* settings )
@@ -55,6 +61,7 @@ void RFFEAnalyzerSettings::LoadSettings( const char* settings )
 
 	text_archive >> mSclkChannel;
 	text_archive >> mSdataChannel;
+	text_archive >> mShowParityInReport;
 
 	ClearChannels();
 	AddChannel( mSclkChannel, "SCLK", true );
@@ -69,6 +76,7 @@ const char* RFFEAnalyzerSettings::SaveSettings()
 
 	text_archive << mSclkChannel;
 	text_archive << mSdataChannel;
+	text_archive << mShowParityInReport;
 
 	return SetReturnString( text_archive.GetString() );
 }
