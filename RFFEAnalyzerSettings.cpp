@@ -18,7 +18,7 @@ RFFEAnalyzerSettings::RFFEAnalyzerSettings()
 
 	mShowParityInReportInterface.reset( new AnalyzerSettingInterfaceBool() );
 	mShowParityInReportInterface->SetTitleAndTooltip("Show Parity in Report?",
-		"Check if you want party information in the exported file" );
+		"Check if you want parity information in the exported file" );
 	AddInterface( mShowParityInReportInterface.get() );
 
 	AddExportOption( 0, "Export as csv/text file" );

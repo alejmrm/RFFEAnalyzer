@@ -395,7 +395,8 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
 
         if ( address == 0xFFFFFFFF )
         {
-            ss << ",,," << payload.str().c_str() << " P" << parityCmd_str;
+            ss << ",,," << payload.str().c_str();
+            if ( show_parity ) ss << " P" << parityCmd_str;
         }
         else
         {
@@ -405,7 +406,9 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
                                               addr_str,
                                               8 );
 
-            ss << "," << addr_str <<" P" << parityCmd_str << "," << bc_str << "," << payload.str().c_str();
+            ss << "," << addr_str;
+            if ( show_parity )  ss <<" P" << parityCmd_str;
+            ss << "," << bc_str << "," << payload.str().c_str();
         }
         ss << std::endl;
         AnalyzerHelpers::AppendToFile( (U8*)ss.str().c_str(), ss.str().length(), f );
