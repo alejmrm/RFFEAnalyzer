@@ -41,10 +41,7 @@ protected: //vars
 	RFFESimulationDataGenerator mSimulationDataGenerator;
 	bool mSimulationInitilized;
 
-	//Serial analysis vars:
 	U32 mSampleRateHz;
-    //U32 mStartOfStopBitOffset;
-	//U32 mEndOfStopBitOffset;
     RFFEAnalyzerResults::RffeTypeFieldType mRffeType;
 
 protected: // functions
@@ -59,7 +56,6 @@ protected: // functions
     void FindAddressFrame(RFFEAnalyzerResults::RffeAddressFieldSubType type);
     void FindBusPark();
     U64  GetBitStream(U32 len, AnalyzerResults::MarkerType *states);
-    //bool CheckClockRate();
     void DrawMarkersDotsAndStates( U32 start,
                                    U32 len,
                                    AnalyzerResults::MarkerType type,
@@ -74,7 +70,6 @@ protected: // functions
                       U32 markers_len,
                       AnalyzerResults::MarkerType *states);
 private:
-    //U64 WidthOfStartBitGuard;
     U64 sampleClkOffsets[16];
     U64 sampleDataOffsets[16];
 
