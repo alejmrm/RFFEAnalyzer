@@ -64,14 +64,14 @@ void RFFESimulationDataGenerator::CreateRffeTransaction()
     U8 cmd;
     U8 cmd_frames[] = 
     {
-        //0x01, //0x07, 0x0F,
-        //0x10, //0x1B, 0x1F,
-        //0x21, //0x23, 0x2F,
-        //0x31, //0x36, 0x37,
-        //0x39, //0x3D, 0x3F,
-        0x43, //0x43, 0x55, 0x5F,
-        0x64, //0x64, 0x78, 0x7F,
-        0x84, //0x91, 0xA3, 0xBC, 0xC1, 0xD9, 0xEF, 0xF2, 0xFF
+        //0x00, 0x01, 0x07, 0x0F,      // Extended write type  [OK]
+        //0x10, 0x11, 0x1B, 0x1F,      // Reserved type        [OK]
+        0x20, 0x21, 0x27, 0x2F,      // Extended read type   [NotGood]
+        //0x30, 0x36, 0x37,      // Extended long write type   [OK]
+        //0x38, 0x3D, 0x3F,      // Extended long read type    [OK]
+        //0x40, 0x43, 0x55, 0x5F,  // Normal write type        [OK]
+        //0x60, 0x63, 0x78, 0x7F,  // Normal read type         [OK]
+        //0x80, 0x91, 0xA3, 0xBC, 0xC1, 0xD9, 0xEF, 0xF2, 0xFF  // short write type [OK]
     };
     U8 sa_addrs[] =
     {
@@ -91,9 +91,9 @@ void RFFESimulationDataGenerator::CreateRffeTransaction()
             {
             case RFFEAnalyzerResults::RffeTypeExtWrite:
                 CreateAddressFrame( 0x65 );
-                for( U32 i = RFFEUtil::byteCount( cmd ) ; i != 0; i-- )
+                for( U32 i = RFFEUtil::byteCount( cmd ) + 1 ; i != 0; i-- )
                 {
-                    CreateDataFrame( 0x11 );
+                    CreateDataFrame( i );
                 }
                 CreateBusPark();
                 break;
@@ -101,20 +101,20 @@ void RFFESimulationDataGenerator::CreateRffeTransaction()
                 CreateBusPark();
                 break;
             case RFFEAnalyzerResults::RffeTypeExtRead:
-                CreateAddressFrame( 0x4C );
+                CreateAddressFrame( 0x4B );
                 CreateBusPark();
-                for( U32 i = RFFEUtil::byteCount( cmd ) ; i != 0; i-- )
+                for( U32 i = RFFEUtil::byteCount( cmd ) + 1 ; i != 0; i-- )
                 {
-                    CreateDataFrame( 0x11 );
+                    CreateDataFrame( i );
                 }
                 CreateBusPark();
                 break;
             case RFFEAnalyzerResults::RffeTypeExtLongWrite:
                 CreateAddressFrame( 0x5A );
                 CreateAddressFrame( 0x94 );
-                for( U32 i = RFFEUtil::byteCount( cmd ) ; i != 0; i-- )
+                for( U32 i = RFFEUtil::byteCount( cmd ) + 1; i != 0; i-- )
                 {
-                    CreateDataFrame( 0x11 );
+                    CreateDataFrame( i );
                 }
                 CreateBusPark();
                 break;
@@ -122,9 +122,9 @@ void RFFESimulationDataGenerator::CreateRffeTransaction()
                 CreateAddressFrame( 0x12 );
                 CreateAddressFrame( 0x34 );
                 CreateBusPark();
-                for( U32 i = RFFEUtil::byteCount( cmd ) ; i != 0; i-- )
+                for( U32 i = RFFEUtil::byteCount( cmd ) + 1; i != 0; i-- )
                 {
-                    CreateDataFrame( 0x11 );
+                    CreateDataFrame( i );
                 }
                 CreateBusPark();
                 break;

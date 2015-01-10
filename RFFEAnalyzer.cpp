@@ -60,8 +60,10 @@ void RFFEAnalyzer::WorkerThread()
             }
             FindBusPark();
             break;
+
         case RFFEAnalyzerResults::RffeTypeReserved:
             break;
+
         case RFFEAnalyzerResults::RffeTypeExtRead:
             FindAddressFrame( RFFEAnalyzerResults::RffeAddressNormalField );
             FindBusPark();
@@ -71,6 +73,7 @@ void RFFEAnalyzer::WorkerThread()
             }
             FindBusPark();
             break;
+
         case RFFEAnalyzerResults::RffeTypeExtLongWrite:
             FindAddressFrame( RFFEAnalyzerResults::RffeAddressHiField );
             FindAddressFrame( RFFEAnalyzerResults::RffeAddressLoField );
@@ -80,6 +83,7 @@ void RFFEAnalyzer::WorkerThread()
             }
             FindBusPark();
             break;
+
         case RFFEAnalyzerResults::RffeTypeExtLongRead:
             FindAddressFrame( RFFEAnalyzerResults::RffeAddressHiField );
             FindAddressFrame( RFFEAnalyzerResults::RffeAddressLoField );
@@ -90,113 +94,100 @@ void RFFEAnalyzer::WorkerThread()
             }
             FindBusPark();
             break;
+
         case RFFEAnalyzerResults::RffeTypeNormalWrite:
             FindDataFrame();
             FindBusPark();
             break;
+
         case RFFEAnalyzerResults::RffeTypeNormalRead:
             FindBusPark();
             FindDataFrame();
             FindBusPark();
             break;
+
         case RFFEAnalyzerResults::RffeTypeShortWrite:
             FindBusPark();
             break;
+
         }
         mResults->CommitPacketAndStartNewPacket();
         CheckIfThreadShouldExit();
 	}
 }
 
-void RFFEAnalyzer::AdvanceToBeginningStartBit()
+bool RFFEAnalyzer::FindStartSeqCondition_MoreTransitions()
 {
-    U64 sample;
-    BitState state;
+    bool transitionable = mSclk->DoMoreTransitionsExistInCurrentData() &&
+                          mSdata->DoMoreTransitionsExistInCurrentData();
+    return transitionable;
+}
 
-	for( ; ; )
-	{
-		mSdata->AdvanceToNextEdge();
-        state = mSdata->GetBitState();
-		if( state == BIT_HIGH )
-		{
-            sample = mSdata->GetSampleNumber();
-			mSclk->AdvanceToAbsPosition( sample );
-            state  = mSclk->GetBitState();
-			if( state == BIT_LOW )
-				break;
-		}	
-	}
+bool RFFEAnalyzer::FindStartSeqCondition_StartBitDetection()
+{
+    U64 data_sample;
+    BitState data_state;
+    BitState clk_state;
+
+    data_sample  = mSdata->GetSampleNumber();
+    data_state   = mSdata->GetBitState();
+    mSclk->AdvanceToAbsPosition( data_sample );
+    clk_state    = mSclk->GetBitState();
+
+    if ( BIT_HIGH == data_state && BIT_LOW == clk_state )
+    {
+        return true;
+    }
+    
+    return false;
 }
 
 S32 RFFEAnalyzer::FindStartSeqCondition()
 {
     U64 sample;
-    BitState state;
 
-    U64 sample_up;
-    U64 sample_dn;
-    U64 sample_next;
-    U64 pulse_1, pulse_2;
-    bool did_toggle;
-
-    // in case that clk is ahead of data
-    sample_up = mSdata->GetSampleNumber();
-    sample_dn =  mSclk->GetSampleNumber();
-    if ( sample_dn > sample_up )
-    {
-        mSdata->AdvanceToAbsPosition( sample_dn );
-    }
-
+    U64 sampleAtRisingEdgeOfStartBit;
+    U64 sampleAtFallingEdgeOfStartBit;
+ 
     for ( ; ; )
     {
-        if( ! mSclk->DoMoreTransitionsExistInCurrentData() ) return -1;
-        if( ! mSdata->DoMoreTransitionsExistInCurrentData() ) return -1;
-
-        sample = mSdata->GetSampleNumber();
-        mSclk->AdvanceToAbsPosition( sample );
-        state  = mSdata->GetBitState();
-        if ( state == BIT_LOW )
+        if ( ! FindStartSeqCondition_MoreTransitions() )
         {
-            AdvanceToBeginningStartBit();
+            return -1;
+        }
+        
+        if ( ! FindStartSeqCondition_StartBitDetection() )
+        {
+           mSdata->AdvanceToNextEdge();
+           continue;
+        }
+
+        sampleAtRisingEdgeOfStartBit = mSdata->GetSampleNumber();
+        mSdata->AdvanceToNextEdge();
+
+        // at falling-edge of Startbit
+        sampleAtFallingEdgeOfStartBit = mSdata->GetSampleNumber();
+
+        if( mSclk->WouldAdvancingToAbsPositionCauseTransition(sampleAtFallingEdgeOfStartBit) )
+        {
+            continue; // Keep searching: found clk toggling
         }
         else
         {
-            mSdata->AdvanceToNextEdge();
-            continue;
+            mSclk->AdvanceToAbsPosition( sampleAtFallingEdgeOfStartBit );
         }
 
-        // advance the pulse
-        sample_up = mSdata->GetSampleNumber();
-        mSdata->AdvanceToNextEdge();
-        sample_dn = mSdata->GetSampleNumber();
-        pulse_1   = sample_dn - sample_up;
-
-        // use to scan for more clocks ahead, in samples
-        pulse_width2 = pulse_1 * 2;
-
-        did_toggle = mSclk->WouldAdvancingToAbsPositionCauseTransition( sample_dn );
-        if( did_toggle )
-            continue; // error: found clk toggling
-
-        // look for idle in clk & data signals
-        mSclk->AdvanceToAbsPosition( sample_dn );
-        sample_next = mSclk->GetSampleOfNextEdge();
-        pulse_2     = sample_next - sample_dn;
-
-        if ( pulse_2 < pulse_1 )
-            continue; // error: idle period too short
-
-        // at rising edge of clk
+        // move data to the rising-edge of clk
         mSclk->AdvanceToNextEdge();
         sample = mSclk->GetSampleNumber();
         mSdata->AdvanceToAbsPosition( sample );
 
 		Frame frame;
         frame.mType                    = RFFEAnalyzerResults::RffeSSCField;
-		frame.mStartingSampleInclusive = sample_up;
+		frame.mStartingSampleInclusive = sampleAtRisingEdgeOfStartBit;
 		frame.mEndingSampleInclusive   = sample;
 
-        mResults->AddMarker( sample_up,
+        mResults->AddMarker( sampleAtRisingEdgeOfStartBit,
                              AnalyzerResults::Start,
                              mSettings->mSdataChannel );
 		mResults->AddFrame( frame );
@@ -210,25 +201,6 @@ S32 RFFEAnalyzer::FindStartSeqCondition()
     return 1;
 }
 
-bool RFFEAnalyzer::CheckClockRate()
-{
-    U32 average;
-    U32 pulse;
-    U32 pulse_lo;
-
-    average = (U32)(gSampleClk[11]/12);
-    pulse   = (U32)(pulse_width2/2);
-    pulse_lo= pulse - 1;
-    if ( pulse == 1 ) return false;
-
-    if ( (average < pulse_lo) || (average >  pulse) )
-    {
-            return false;
-    }
-    return true;
-}
-
-
 S32 RFFEAnalyzer::FindSlaveAddrAndCommand()
 {
     S32 count = 0;
@@ -241,18 +213,6 @@ S32 RFFEAnalyzer::FindSlaveAddrAndCommand()
 
     // starting at rising edge of clk
     cmd = GetBitStream( 12, sampleDataState);
-
-    // check if clk rate is consistent
-    if ( !CheckClockRate() )
-    {
-            FillInFrame( RFFEAnalyzerResults::RffeErrorCaseField,
-                         gSampleClk[11],
-                         pulse_width2,
-                         sampleClkOffsets[0], sampleClkOffsets[12],
-                         0, 4,
-                         sampleDataState );
-            return -1;
-    }
 
     SAdr = ( cmd & 0xF00 ) >> 8;
     FillInFrame( RFFEAnalyzerResults::RffeSAField,
@@ -370,7 +330,7 @@ S32 RFFEAnalyzer::FindSlaveAddrAndCommand()
                      4, 1,
                      sampleDataState );
         FillInFrame( RFFEAnalyzerResults::RffeShortDataField,
-                     ( cmd & 0x7F ) >> 7,
+                     (cmd & 0x7F),
                      0,
                      sampleClkOffsets[5], sampleClkOffsets[12],
                      5, 7,
@@ -433,7 +393,11 @@ void RFFEAnalyzer::FindBusPark()
     }
     else
     {
-        sampleClkOffsets[1] = sampleDataOffsets[0] + delta;
+        sampleClkOffsets[1] = sampleDataOffsets[0] + delta + 2;
+        if( mSclk->DoMoreTransitionsExistInCurrentData() )
+        {
+            mSclk->AdvanceToNextEdge();
+        }
     }
 
     FillInFrame( RFFEAnalyzerResults::RffeBusParkField,
@@ -449,11 +413,11 @@ void RFFEAnalyzer::FindDataFrame()
 {
     AnalyzerResults::MarkerType sampleDataState[16];
 
-    U64 addr = GetBitStream( 8, sampleDataState );
+    U64 data = GetBitStream( 8, sampleDataState );
 
     // decode data
     FillInFrame( RFFEAnalyzerResults::RffeDataField,
-                 addr,
+                 data,
                  0,
                  sampleClkOffsets[0],
                  sampleClkOffsets[8],

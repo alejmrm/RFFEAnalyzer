@@ -38,12 +38,5 @@ RFFEAnalyzerResults::RffeTypeFieldType  RFFEUtil::decodeRFFECmdFrame(U8 cmd)
 
 U8 RFFEUtil::byteCount(U8 cmd)
 {
-    if ( cmd < 0x30 )
-    {
-        return ( cmd & 0x0F );
-    }
-    else
-    {
-        return ( cmd & 0x07 );
-    }
+    return (cmd < 0x30) ? (cmd & 0x0F) : (cmd & 0x07);
 }

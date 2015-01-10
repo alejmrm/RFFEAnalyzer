@@ -43,12 +43,15 @@ protected: //vars
 
 	//Serial analysis vars:
 	U32 mSampleRateHz;
-    U32 mStartOfStopBitOffset;
-	U32 mEndOfStopBitOffset;
+    //U32 mStartOfStopBitOffset;
+	//U32 mEndOfStopBitOffset;
     RFFEAnalyzerResults::RffeTypeFieldType mRffeType;
 
 protected: // functions
-	void AdvanceToBeginningStartBit();
+    void FindStartSeqCondition_MoveDataIfClkAheadOfData();
+    bool FindStartSeqCondition_MoreTransitions();
+	bool FindStartSeqCondition_StartBitDetection();
+    U64  FindStartSeqCondition_CalculatePulseWidth();
     S32 FindStartSeqCondition();
     S32 FindSlaveAddrAndCommand();
     void FindParity(bool fromCommandFrame);
@@ -56,7 +59,7 @@ protected: // functions
     void FindAddressFrame(RFFEAnalyzerResults::RffeAddressFieldSubType type);
     void FindBusPark();
     U64  GetBitStream(U32 len, AnalyzerResults::MarkerType *states);
-    bool CheckClockRate();
+    //bool CheckClockRate();
     void DrawMarkersDotsAndStates( U32 start,
                                    U32 len,
                                    AnalyzerResults::MarkerType type,
@@ -71,7 +74,7 @@ protected: // functions
                       U32 markers_len,
                       AnalyzerResults::MarkerType *states);
 private:
-    U64 pulse_width2;
+    //U64 WidthOfStartBitGuard;
     U64 sampleClkOffsets[16];
     U64 sampleDataOffsets[16];
 
