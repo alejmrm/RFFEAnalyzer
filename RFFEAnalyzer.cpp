@@ -42,6 +42,8 @@ void RFFEAnalyzer::WorkerThread()
             mResults->CancelPacketAndStartNewPacket();
             break;
         }
+        //continue; // for debugging only
+
         count = FindSlaveAddrAndCommand();
         if ( count == -1 )
         {
@@ -49,6 +51,7 @@ void RFFEAnalyzer::WorkerThread()
             continue;
         }
         FindParity(true);
+        //continue; // for debugging only
 
         switch ( mRffeType )
         {
@@ -390,13 +393,15 @@ void RFFEAnalyzer::FindBusPark()
     {
         mSclk->AdvanceToNextEdge();
         sampleClkOffsets[1] = mSclk->GetSampleNumber();
+        mSdata->AdvanceToAbsPosition( sampleClkOffsets[1] );
     }
     else
     {
         sampleClkOffsets[1] = sampleDataOffsets[0] + delta + 2;
         if( mSclk->DoMoreTransitionsExistInCurrentData() )
         {
-            mSclk->AdvanceToNextEdge();
+            mSclk->AdvanceToAbsPosition ( sampleClkOffsets[1] );
+            mSdata->AdvanceToAbsPosition( sampleClkOffsets[1] );
         }
     }
 

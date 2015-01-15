@@ -335,7 +335,7 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
                                                   7,
                                                   data_str,
                                                   8 );
-		        payload << "D:" << data_str << " ";
+		        payload << data_str << " ";
                 break;
 
             case RffeDataField:
