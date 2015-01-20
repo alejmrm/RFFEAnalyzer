@@ -54,7 +54,8 @@ protected: // functions
     void FindParity(bool fromCommandFrame);
     void FindDataFrame();
     void FindAddressFrame(RFFEAnalyzerResults::RffeAddressFieldSubType type);
-    void FindBusPark();
+    void FindBusParkLastSimbol();
+    void FindBusParkAdditionalSimbols();
     U64  GetBitStream(U32 len, AnalyzerResults::MarkerType *states);
     void DrawMarkersDotsAndStates( U32 start,
                                    U32 len,
@@ -69,6 +70,9 @@ protected: // functions
                       U32 markers_start,
                       U32 markers_len,
                       AnalyzerResults::MarkerType *states);
+private:
+    bool FindBusPark();
+
 private:
     U64 sampleClkOffsets[16];
     U64 sampleDataOffsets[16];

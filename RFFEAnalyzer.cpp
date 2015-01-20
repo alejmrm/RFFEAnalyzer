@@ -61,7 +61,7 @@ void RFFEAnalyzer::WorkerThread()
             {
                 FindDataFrame();
             }
-            FindBusPark();
+            FindBusParkLastSimbol();
             break;
 
         case RFFEAnalyzerResults::RffeTypeReserved:
@@ -69,12 +69,12 @@ void RFFEAnalyzer::WorkerThread()
 
         case RFFEAnalyzerResults::RffeTypeExtRead:
             FindAddressFrame( RFFEAnalyzerResults::RffeAddressNormalField );
-            FindBusPark();
+            FindBusParkAdditionalSimbols();
             for( U32 i = count ; i != 0; i-- )
             {
                 FindDataFrame();
             }
-            FindBusPark();
+            FindBusParkLastSimbol();
             break;
 
         case RFFEAnalyzerResults::RffeTypeExtLongWrite:
@@ -84,33 +84,33 @@ void RFFEAnalyzer::WorkerThread()
             {
                 FindDataFrame();
             }
-            FindBusPark();
+            FindBusParkLastSimbol();
             break;
 
         case RFFEAnalyzerResults::RffeTypeExtLongRead:
             FindAddressFrame( RFFEAnalyzerResults::RffeAddressHiField );
             FindAddressFrame( RFFEAnalyzerResults::RffeAddressLoField );
-            FindBusPark();
+            FindBusParkAdditionalSimbols();
             for( U32 i = count ; i != 0; i-- )
             {
                 FindDataFrame();
             }
-            FindBusPark();
+            FindBusParkLastSimbol();
             break;
 
         case RFFEAnalyzerResults::RffeTypeNormalWrite:
             FindDataFrame();
-            FindBusPark();
+            FindBusParkLastSimbol();
             break;
 
         case RFFEAnalyzerResults::RffeTypeNormalRead:
-            FindBusPark();
+            FindBusParkAdditionalSimbols();
             FindDataFrame();
-            FindBusPark();
+            FindBusParkLastSimbol();
             break;
 
         case RFFEAnalyzerResults::RffeTypeShortWrite:
-            FindBusPark();
+            FindBusParkLastSimbol();
             break;
 
         }
@@ -374,10 +374,10 @@ void RFFEAnalyzer::FindParity(bool fromCommandFrame)
                  &state);
 }
 
-void RFFEAnalyzer::FindBusPark()
+bool RFFEAnalyzer::FindBusPark()
 {
     U64 delta;
-    AnalyzerResults::MarkerType mark = AnalyzerResults::Stop;
+    bool reachClkEdge = false;
 
     // at rising edge of clk
     sampleClkOffsets[0] = mSclk->GetSampleNumber();
@@ -394,6 +394,8 @@ void RFFEAnalyzer::FindBusPark()
         mSclk->AdvanceToNextEdge();
         sampleClkOffsets[1] = mSclk->GetSampleNumber();
         mSdata->AdvanceToAbsPosition( sampleClkOffsets[1] );
+
+        reachClkEdge= true;
     }
     else
     {
@@ -405,6 +407,15 @@ void RFFEAnalyzer::FindBusPark()
         }
     }
 
+    return reachClkEdge;
+}
+
+void RFFEAnalyzer::FindBusParkLastSimbol()
+{
+    AnalyzerResults::MarkerType mark = AnalyzerResults::Stop;
+
+    FindBusPark();
+
     FillInFrame( RFFEAnalyzerResults::RffeBusParkField,
                  0,
                  0,
@@ -412,6 +423,28 @@ void RFFEAnalyzer::FindBusPark()
                  sampleClkOffsets[1],
                  0, 1,
                  &mark );
+}
+
+void RFFEAnalyzer::FindBusParkAdditionalSimbols()
+{
+    AnalyzerResults::MarkerType mark = AnalyzerResults::Stop;
+
+    bool reachClkEdge = FindBusPark();
+
+    if( !reachClkEdge && mSclk->DoMoreTransitionsExistInCurrentData() )
+    {
+        mSclk->AdvanceToNextEdge();
+        mSdata->AdvanceToAbsPosition( mSclk->GetSampleNumber() );
+    }
+
+    FillInFrame( RFFEAnalyzerResults::RffeBusParkField,
+                 0,
+                 0,
+                 sampleClkOffsets[0],
+                 sampleClkOffsets[1],
+                 0, 1,
+                 &mark );
+
 }
 
 void RFFEAnalyzer::FindDataFrame()
