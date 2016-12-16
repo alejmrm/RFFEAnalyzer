@@ -428,27 +428,17 @@ void RFFEAnalyzerResults::GenerateExportFile( const char* file,
 void RFFEAnalyzerResults::GenerateFrameTabularText( U64 frame_index, DisplayBase display_base )
 {
 	//Frame frame = GetFrame( frame_index );
-    frame_index = frame_index;
-    display_base = display_base;
 
-	ClearResultStrings();
-	AddResultString( "not supported yet" );
+	ClearTabularText();
+	//AddTabularText( "" );
 }
 
 void RFFEAnalyzerResults::GeneratePacketTabularText( U64 packet_id, DisplayBase display_base )
 {
-    packet_id = packet_id;
-    display_base = display_base;
 
-	ClearResultStrings();
-	AddResultString( "not supported yet" );
 }
 
 void RFFEAnalyzerResults::GenerateTransactionTabularText( U64 transaction_id, DisplayBase display_base )
 {
-    transaction_id = transaction_id;
-    display_base = display_base;
 
-	ClearResultStrings();
-	AddResultString( "not supported yet" );
 }

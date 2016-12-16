@@ -11,13 +11,10 @@
 *.la
 *.a
 
-include/
-lib/
-x64/
-
-# VS project files
-*.sdf
-*.sln
-*.v11.*
-*.vcxproj*
-
+#added for Saleae Analyzer SDK submodule
+Debug/
+Release/
+*.VC.db
+*.VC.opendb
+*.suo
+*.sln.ecd
